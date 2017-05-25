@@ -1,0 +1,17 @@
+{
+  "name": "metaheuristicserver",
+  "version": "1.0.0",
+  "description": "This is going to be the rest server for the metaheuristic database",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Adolfo Reyna",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.15.3",
+    "mongo": "^0.1.0",
+    "mongodb": "^2.2.27",
+    "pug": "^2.0.0-rc.1"
+  }
+}
