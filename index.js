@@ -3,6 +3,7 @@ var express = require('express'),
     // pug = require('pug'),
     MongoClient = require('mongodb').MongoClient,
     assert = require('assert');
+    dbCalls = require('./dbCalls');
 
 // app.set('view engine', 'pug');
 
@@ -14,14 +15,15 @@ MongoClient.connect("mongodb://guess:guess@ds131340.mlab.com:31340/metaheuristic
   //console.log(list);
 
   app.get('/', (req, res)=>{
-    res.send("Welcome to the api.")
+    res.send("Welcome to the metaheuristic api.")
   });
 
-  app.get('/:number/skip/:skip', (req, res)=>{
-    //console.log(req);
-    list.find({}).sort({year:1}).skip(parseInt(req.params.skip)).limit(parseInt(req.params.number)).toArray((err, docs)=>{
-      res.json(docs);
-    });
+  app.get("/list", (req, res)=>{
+    var query = req.query.query ? JSON.parse(req.query.query) : {};
+    var sort = req.query.sort ? JSON.parse(req.query.sort) : {};
+    var limit = req.query.limit ? parseInt(req.query.limit) : 0;
+    var skip = req.query.skip ? parseInt(req.query.skip) : 0;
+    dbCalls.getList(list, res, query, sort, limit, skip);
   });
 
   app.get('/acronym/:acronym', (req, res)=>{
@@ -29,6 +31,14 @@ MongoClient.connect("mongodb://guess:guess@ds131340.mlab.com:31340/metaheuristic
     list.find({acronym:req.params.acronym}).toArray((err, docs)=>{
       res.json( docs );
     });
+  });
+
+  app.get('/records', (req, res)=>{
+    var query = req.query.query ? JSON.parse(req.query.query) : {};
+    var sort = req.query.sort ? JSON.parse(req.query.sort) : {};
+    var limit = req.query.limit ? parseInt(req.query.limit) : 0;
+    var skip = req.query.skip ? parseInt(req.query.skip) : 0;
+    dbCalls.getList(records, res, query, sort, limit, skip);
   });
 
   app.get('/records/:acronym', (req, res)=>{
