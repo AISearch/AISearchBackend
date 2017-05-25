@@ -6,6 +6,7 @@ var express = require('express'),
     dbCalls = require('./dbCalls');
 
 // app.set('view engine', 'pug');
+app.set('port', (process.env.PORT || 5000));
 
 MongoClient.connect("mongodb://guess:guess@ds131340.mlab.com:31340/metaheuristics", (err, db)=>{
   assert.equal(null, err);
@@ -62,7 +63,7 @@ MongoClient.connect("mongodb://guess:guess@ds131340.mlab.com:31340/metaheuristic
     res.sendStatus(404);
   });
 
-  var server = app.listen(3000, ()=>{
+  var server = app.listen(app.get('port'), ()=>{
     var port = server.address().port;
     console.log('Express server is lisening at port ', port);
   });
