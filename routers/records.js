@@ -27,7 +27,7 @@ router.get('/', function (req, res) {
   });
 })
 router.post('/', function(req,res){
-  var entry = JSON.parse(req.body.entry);
+  var entry = req.body;
   records.insertOne(entry, (err, r)=>{
     assert.equal(err, null);
     res.send("ok");

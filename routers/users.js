@@ -17,4 +17,9 @@ router.get('/', function (req, res) {
   res.send('ok')
 });
 
+router.post('/', (req, res)=>{
+  res.jsonp(req.body);
+  console.log(req.body);
+});
+
 module.exports = router;
