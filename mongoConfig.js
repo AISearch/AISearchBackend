@@ -1,8 +1,18 @@
+var MongoClient = require( 'mongodb' ).MongoClient;
+
 var user = "heroku"
 var psw = process.env.MLABPSW
+var _db;
 
-var mongoConfig = {
-  uri: "mongodb://" + user + ":" + psw + "@ds131340.mlab.com:31340/metaheuristics"
-}
+module.exports = {
+  connectToServer: function( callback ) {
+    MongoClient.connect( "mongodb://" + user + ":" + psw + "@ds131340.mlab.com:31340/metaheuristics" , function( err, db ) {
+      _db = db;
+      return callback( err );
+    } );
+  },
 
-module.exports = mongoConfig;
+  getDb: function() {
+    return _db;
+  }
+};
