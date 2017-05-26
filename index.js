@@ -1,5 +1,6 @@
 var express = require('express'),
     app = express(),
+    bodyParser = require('body-parser'),
     // pug = require('pug'),
     //MongoClient = require('mongodb').MongoClient,
     mongoUtil = require( './mongoConfig' ),
@@ -9,6 +10,12 @@ var express = require('express'),
 
 // app.set('view engine', 'pug');
 app.set('port', (process.env.PORT || 5000));
+
+// parse application/x-www-form-urlencoded
+app.use(bodyParser.urlencoded({ extended: false }))
+
+// parse application/json
+app.use(bodyParser.json())
 
 mongoUtil.connectToServer( ( err )=>{
   assert.equal(null, err);
