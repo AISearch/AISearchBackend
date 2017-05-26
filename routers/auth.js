@@ -7,6 +7,7 @@ module.exports = {
     if(req.query.apiKey){
       usersApi.findOne({key:req.query.apiKey}, (err, doc)=>{
         if(err == null && doc != null){
+          req.body.user = doc.user;
           next();
         }else{
           res.send("This API Key is not valid.");

@@ -1,6 +1,7 @@
 var express = require('express');
 var router = express.Router();
 var auth = require('./auth');
+var assert = require('assert');
 
 var mongoUtil = require( './../mongoConfig' );
 var db = mongoUtil.getDb();
