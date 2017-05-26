@@ -14,7 +14,8 @@ MongoClient.connect(mongoConfig.uri, (err, db)=>{
   assert.equal(null, err);
 
   var list = db.collection('list');
-  var records = db.collection('records')
+  var records = db.collection('records');
+  var benchmarks = db.collection('benchmarks');
   //console.log(list);
 
   app.get('/', (req, res)=>{
@@ -67,6 +68,22 @@ MongoClient.connect(mongoConfig.uri, (err, db)=>{
     records.aggregate(agregateArray, (err, data)=>{
       res.send(JSON.stringify(data));
     });
+  });
+
+  app.get('/benchmarks', (req,res)=>{
+    var query = req.query.query ? JSON.parse(req.query.query) : {};
+    var sort = req.query.sort ? JSON.parse(req.query.sort) : {};
+    var limit = req.query.limit ? parseInt(req.query.limit) : 0;
+    var skip = req.query.skip ? parseInt(req.query.skip) : 0;
+    dbCalls.getList(benchmarks, res, query, sort, limit, skip);
+  });
+
+  app.get('/benchmarks/:name', (req,res)=>{
+    var query = req.query.query ? JSON.parse(req.query.query) : {};
+    var sort = req.query.sort ? JSON.parse(req.query.sort) : {};
+    var limit = req.query.limit ? parseInt(req.query.limit) : 0;
+    var skip = req.query.skip ? parseInt(req.query.skip) : 0;
+    dbCalls.getList(benchmarks, res, {name: req.params.name});
   });
 
   app.use((req,res)=>{
