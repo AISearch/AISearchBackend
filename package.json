@@ -10,7 +10,6 @@
   "license": "ISC",
   "dependencies": {
     "express": "^4.15.3",
-    "mongo": "^0.1.0",
     "mongodb": "^2.2.27",
     "pug": "^2.0.0-rc.1"
   }

@@ -2,13 +2,15 @@ var express = require('express'),
     app = express(),
     // pug = require('pug'),
     MongoClient = require('mongodb').MongoClient,
-    assert = require('assert');
-    dbCalls = require('./dbCalls');
+    assert = require('assert'),
+    dbCalls = require('./dbCalls'),
+    mongoConfig = require("./mongoConfig")
+
 
 // app.set('view engine', 'pug');
 app.set('port', (process.env.PORT || 5000));
 
-MongoClient.connect("mongodb://guess:guess@ds131340.mlab.com:31340/metaheuristics", (err, db)=>{
+MongoClient.connect(mongoConfig.uri, (err, db)=>{
   assert.equal(null, err);
 
   var list = db.collection('list');
@@ -42,20 +44,28 @@ MongoClient.connect("mongodb://guess:guess@ds131340.mlab.com:31340/metaheuristic
     dbCalls.getList(records, res, query, sort, limit, skip);
   });
 
-  app.get('/records/:acronym', (req, res)=>{
-    records.find({algorithm:req.params.acronym}).toArray((err,docs)=>{
-      var items = docs.reduce((res,item)=>{
-        if (!res.hasOwnProperty(item.algorithm)){
-          res[item.algorithm] = {};
-        }
-        if (!res[item.algorithm].hasOwnProperty(item.benchmark)){
-          res[item.algorithm][item.benchmark] = [];
-        }
-        res[item.algorithm][item.benchmark].push(item);
-        return res;
-      }, {});
-      console.log(items);
-      res.render(items);
+  app.get('/records/avg', (req, res)=>{
+    var agregateArray = [];
+    if(req.query.acronym){
+      agregateArray.push({$match: { algorithm: req.query.acronym }})
+    }
+    if(req.query.benchmark){
+      agregateArray.push({$match: { benchmark: req.query.benchmark }})
+    }
+    if(req.query.dimensions){
+      agregateArray.push({$match: { dimensions: parseInt(req.query.dimensions) }})
+    }
+    agregateArray.push({$group:
+      {
+        _id: {benchmark:"$benchmark", dimensions:"$dimensions", algorithm:"$algorithm"},
+        fitnessAvg: { $avg: "$bestFitness" },
+        bestFitness: { $min: "$bestFitness" },
+        bestSolutions: { $push: "$bestSolution" },
+        count: { $sum: 1 }
+      }
+    });
+    records.aggregate(agregateArray, (err, data)=>{
+      res.send(JSON.stringify(data));
     });
   });
 
