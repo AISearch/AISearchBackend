@@ -59,4 +59,4 @@ router.get('/avg', (req, res)=>{
   });
 });
 
-module.exports = router
+module.exports = router;

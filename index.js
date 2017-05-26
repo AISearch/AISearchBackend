@@ -1,9 +1,6 @@
 var express = require('express'),
     app = express(),
     bodyParser = require('body-parser'),
-    // pug = require('pug'),
-    //MongoClient = require('mongodb').MongoClient,
-    mongoUtil = require( './mongoConfig' ),
     assert = require('assert'),
     mongoConfig = require("./mongoConfig");
 
@@ -13,11 +10,10 @@ app.set('port', (process.env.PORT || 5000));
 
 // parse application/x-www-form-urlencoded
 app.use(bodyParser.urlencoded({ extended: false }))
-
 // parse application/json
 app.use(bodyParser.json())
 
-mongoUtil.connectToServer( ( err )=>{
+mongoConfig.connectToServer( ( err )=>{
   assert.equal(null, err);
   //console.log(list);
 
@@ -30,6 +26,8 @@ mongoUtil.connectToServer( ( err )=>{
   app.use('/records', require("./routers/records"));
 
   app.use('/benchmarks', require("./routers/benchmarks"));
+
+  app.use('/users', require("./routers/users"));
 
   app.use((req,res)=>{
     res.sendStatus(404);

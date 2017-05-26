@@ -17,8 +17,8 @@ router.use(function timeLog (req, res, next) {
 router.get('/', function (req, res) {
   var query = req.query.query ? JSON.parse(req.query.query) : {};
   var sort = req.query.sort ? JSON.parse(req.query.sort) : {};
-  var limit = req.query.limit ? parseInt(req.query.limit) : 0;
-  var skip = req.query.skip ? parseInt(req.query.skip) : 10;
+  var limit = req.query.limit ? parseInt(req.query.limit) : 10;
+  var skip = req.query.skip ? parseInt(req.query.skip) : 0;
   list.find(query).sort(sort).skip(skip).limit(limit).toArray((err, docs)=>{
     res.json(docs);
   });
@@ -31,4 +31,4 @@ router.get('/:acronym', (req, res)=>{
   });
 });
 
-module.exports = router
+module.exports = router;

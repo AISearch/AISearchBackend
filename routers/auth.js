@@ -4,8 +4,8 @@ var usersApi = db.collection('usersApi');
 
 module.exports = {
   isApiKeyValid: ( req, res, next )=>{
-    if(req.query.apikey){
-      usersApi.findOne({key:req.query.apikey}, (err, doc)=>{
+    if(req.query.apiKey){
+      usersApi.findOne({key:req.query.apiKey}, (err, doc)=>{
         if(err == null && doc != null){
           next();
         }else{
@@ -13,7 +13,7 @@ module.exports = {
         }
       });
     }else{
-      res.send("Not API Key was given.")
+      res.send("Not valid apiKey param was given.");
     }
   }
 };
