@@ -34,18 +34,18 @@ router.post('/', function(req,res){
     res.send("ok");
   });
 });
-// define the about route
 router.get('/avg', (req, res)=>{
   var agregateArray = [];
   if(req.query.acronym){
-    agregateArray.push({$match: { algorithm: req.query.acronym }})
+    agregateArray.push({$match: { algorithm: req.query.acronym }});
   }
   if(req.query.benchmark){
-    agregateArray.push({$match: { benchmark: req.query.benchmark }})
+    agregateArray.push({$match: { benchmark: req.query.benchmark }});
   }
   if(req.query.dimensions){
-    agregateArray.push({$match: { dimensions: parseInt(req.query.dimensions) }})
+    agregateArray.push({$match: { dimensions: parseInt(req.query.dimensions) }});
   }
+
   agregateArray.push({$group:
     {
       _id: {benchmark:"$benchmark", dimensions:"$dimensions", algorithm:"$algorithm"},
@@ -55,6 +55,36 @@ router.get('/avg', (req, res)=>{
       count: { $sum: 1 }
     }
   });
+
+  agregateArray.push({ $sort: { fitnessAvg: 1 } });
+
+  records.aggregate(agregateArray, (err, data)=>{
+    res.jsonp(data);
+  });
+});
+
+router.get('/tournament', (req, res)=>{
+  var agregateArray = [];
+  agregateArray.push({$group:
+    {
+      _id: {benchmark:"$benchmark", dimensions:"$dimensions", algorithm:"$algorithm"},
+      fitnessAvg: { $avg: "$bestFitness" },
+      bestFitness: { $min: "$bestFitness" },
+      count: { $sum: 1 }
+    }
+  });
+  agregateArray.push({ $sort: { fitnessAvg: 1 } });
+  agregateArray.push({$group:
+    {
+      _id: {benchmark:"$_id.benchmark", dimensions:"$_id.dimensions" },
+      winner : { $first: "$_id.algorithm" },
+      winnerFit : { $first: "$fitnessAvg" },
+      placesAlg : { $push: "$_id.algorithm" },
+      placesFit : { $push: "$fitnessAvg" },
+      participants : { $sum: 1 }
+    }
+  });
+  agregateArray.push({ $sort: { "_id.benchmark": 1 } });
   records.aggregate(agregateArray, (err, data)=>{
     res.jsonp(data);
   });
