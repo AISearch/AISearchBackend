@@ -84,7 +84,7 @@ router.get('/tournament', (req, res)=>{
       participants : { $sum: 1 }
     }
   });
-  agregateArray.push({ $sort: { "_id.benchmark": 1 } });
+  agregateArray.push({ $sort: { "_id.benchmark": 1,  "_id.dimensions": 1 } });
   records.aggregate(agregateArray, (err, data)=>{
     res.jsonp(data);
   });
