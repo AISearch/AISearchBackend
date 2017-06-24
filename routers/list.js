@@ -24,7 +24,7 @@ router.get('/', function (req, res) {
   });
 })
 // define the about route
-router.get('/:acronym', (req, res)=>{
+router.get('/acronym/:acronym', (req, res)=>{
   //console.log(list)
   list.find({acronym:req.params.acronym}).toArray((err, docs)=>{
     res.json( docs );
