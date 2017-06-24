@@ -31,4 +31,17 @@ router.get('/:acronym', (req, res)=>{
   });
 });
 
+router.get('/countYear', (req,res)=>{
+  var agregateArray = [];
+  agregateArray.push({$group:
+    {
+      _id: {year:"$year"},
+      count: { $sum: 1 },
+    }
+  });
+  list.aggregate(agregateArray, (err, data)=>{
+    res.jsonp(data);
+  });
+})
+
 module.exports = router;
