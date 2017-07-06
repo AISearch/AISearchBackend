@@ -36,6 +36,8 @@ mongoConfig.connectToServer( ( err )=>{
 
   app.use('/users', require("./routers/users"));
 
+  app.use('/papers', require("./routers/papers"));
+
   app.use((req,res)=>{
     res.sendStatus(404);
   });

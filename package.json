@@ -9,9 +9,11 @@
   "author": "Adolfo Reyna",
   "license": "ISC",
   "dependencies": {
+    "axios": "^0.16.2",
     "body-parser": "^1.17.2",
     "express": "^4.15.3",
     "mongodb": "^2.2.27",
-    "pug": "^2.0.0-rc.1"
+    "pug": "^2.0.0-rc.1",
+    "xml2js": "^0.4.17"
   }
 }
