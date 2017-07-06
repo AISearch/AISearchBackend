@@ -42,20 +42,30 @@ router.get('/name/:AlgorithmName', function (req, res) {
   }
 });
 
-router.get('/dummy/:AlgorithmName', function (req, res) {
-  list.findOne({title:req.params.AlgorithmName}, function(err, data){
-    console.log(err);
-    console.log(data);
-    res.json(data);
-  })
+router.get('/titles/:AlgorithmName', function (req, res) {
+  var query = {AlgorithmName:req.params.AlgorithmName};
+  var project = { title: 1, AlgorithmName:1 };
+  var sort = req.query.sort ? JSON.parse(req.query.sort) : {};
+  var limit = req.query.limit ? parseInt(req.query.limit) : 10;
+  var skip = req.query.skip ? parseInt(req.query.skip) : 0;
+  papers.find(query, project).sort(sort).skip(skip).limit(limit).toArray((err, docs)=>{
+    res.jsonp(docs);
+  });
 });
 
 router.get('/count', function (req, res) {
   var agregateArray = [];
   agregateArray.push({$group:
     {
-      _id: {AlgorithmName:"$AlgorithmName"},
+      _id: {AlgorithmName:"$AlgorithmName", py :"$py"},
       count: { $sum: 1 }
+    }
+  });
+  agregateArray.push({$group:
+    {
+      _id: {AlgorithmName:"$_id.AlgorithmName"},
+      countYears: {$push: { year:"$_id.py", count:"$count"  }},
+      count: { $sum: "$count" }
     }
   });
   agregateArray.push({ $sort: { count: -1 } });
