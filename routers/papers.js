@@ -19,17 +19,49 @@ router.use(function timeLog (req, res, next) {
   }
 })
 // define the home page route
-router.get('/:AlgorithmName', function (req, res) {
-  if ( list.findOne({title:req.params.AlgorithmName}) ){
-    papers.find({AlgorithmName:req.params.AlgorithmName}).limit(100).toArray((err, docs)=>{
-      if(docs.length != 0){
-        res.json( docs );
-      }else{
-        res.send("We don't have this algorithm information, try again later.")
-        fetchFromIEEE(req.params.AlgorithmName);
+router.get('/name/:AlgorithmName', function (req, res) {
+  if ( req.params.AlgorithmName){
+    list.findOne({title:req.params.AlgorithmName}, function(err, data){
+      if(data){
+        papers.find({AlgorithmName:req.params.AlgorithmName}).limit(100).toArray((err, docs)=>{
+          if(docs.length != 0){
+            res.json( docs );
+          }else{
+            res.send("We don't have this algorithm information, try again in 2 minutes.")
+            fetchFromIEEE(req.params.AlgorithmName);
+          }
+        });
+      }
+      else{
+        res.send("Error: This name do not match with any algorithm register");
       }
     });
   }
+  else{
+    res.send("Error: No name included");
+  }
+});
+
+router.get('/dummy/:AlgorithmName', function (req, res) {
+  list.findOne({title:req.params.AlgorithmName}, function(err, data){
+    console.log(err);
+    console.log(data);
+    res.json(data);
+  })
+});
+
+router.get('/count', function (req, res) {
+  var agregateArray = [];
+  agregateArray.push({$group:
+    {
+      _id: {AlgorithmName:"$AlgorithmName"},
+      count: { $sum: 1 }
+    }
+  });
+  agregateArray.push({ $sort: { count: -1 } });
+  papers.aggregate(agregateArray, (err, data)=>{
+    res.jsonp(data);
+  });
 });
 
 let fetchFromIEEE = function(AlgorithmName) {
