@@ -58,7 +58,7 @@ router.get('/count', function (req, res) {
   var agregateArray = [];
   agregateArray.push({$group:
     {
-      _id: {algorithmname:"$algorithmname", py :"$year"},
+      _id: {algorithmname:"$algorithmname", year :"$year"},
       count: { $sum: 1 }
     }
   });
