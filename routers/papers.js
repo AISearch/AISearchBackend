@@ -17,7 +17,8 @@ router.use(function timeLog (req, res, next) {
   }else{
     next();
   }
-})
+});
+
 // define the home page route
 router.get('/name/:AlgorithmName', function (req, res) {
   if ( req.params.AlgorithmName){
@@ -43,8 +44,35 @@ router.get('/name/:AlgorithmName', function (req, res) {
   }
 });
 
+router.get('/fetchThemAll', function(req, res){
+  list.find({},{title:1}).toArray((err, docs)=>{
+    docs.forEach(d => {
+      fetchFromIEEE(d.title);
+      fetchFromElsevier(d.title);
+    });
+  });
+});
+router.get('/fetchIEEE/:AlgorithmName', function (req, res) {
+  if ( req.params.AlgorithmName){
+    list.findOne({title:req.params.AlgorithmName}, function(err, data){
+      if(data){
+        fetchFromIEEE(req.params.AlgorithmName);
+      }
+    });
+  }
+});
+router.get('/fetchElsevier/:AlgorithmName', function (req, res) {
+  if ( req.params.AlgorithmName){
+    list.findOne({title:req.params.AlgorithmName}, function(err, data){
+      if(data){
+        fetchFromElsevier(req.params.AlgorithmName);
+      }
+    });
+  }
+});
+
 router.get('/titles/:AlgorithmName', function (req, res) {
-  var query = {AlgorithmName:req.params.AlgorithmName};
+  var query = {algorithmname:req.params.AlgorithmName};
   var project = { title: 1, AlgorithmName:1 };
   var sort = req.query.sort ? JSON.parse(req.query.sort) : {};
   var limit = req.query.limit ? parseInt(req.query.limit) : 10;
@@ -75,8 +103,40 @@ router.get('/count', function (req, res) {
   });
 });
 
+router.get('/papersPerYear', function (req, res) {
+  var agregateArray = [];
+  agregateArray.push({$group:
+    {
+      _id: {algorithmname:"$algorithmname", year:"$year"},
+      countReferences: {$sum : 1},
+      doi: {$push: "$doi"}
+    }
+  });
+  agregateArray.push({ $unwind : "$doi" });
+  agregateArray.push({$group:
+    {
+      _id: {year:"$_id.year"},
+      algorithms: { $addToSet : {
+        algorithmname:"$_id.algorithmname",
+        countReferences: "$countReferences"
+      }},
+      doiArray:{$addToSet:"$doi"}
+    }
+  });
+  agregateArray.push({$project:
+    {
+      year: "$id_year",
+      algorithms: 1,
+      papers: { $size: "$doiArray" }
+    }
+  });
+  agregateArray.push({ $sort: { "_id.year": 1 } });
+  papers.aggregate(agregateArray, (err, data)=>{
+    res.jsonp(data);
+  });
+});
+
 let fetchFromIEEE = function(AlgorithmName) {
-  let webRes = "";
   let NoArtPerPage = 1000; //default
   let pageNumber = 0;
   let rs = NoArtPerPage * pageNumber;
@@ -84,12 +144,13 @@ let fetchFromIEEE = function(AlgorithmName) {
   let urlApi = "http://ieeexplore.ieee.org/gateway/ipsSearch.jsp";
   let sortParams = "&sortfield=py&sortorder=desc";
 
-  axios.get(urlApi + '?ab="' + AlgorithmName + '"&hc=1')
+
+  axios.get(urlApi + '?querytext="' + AlgorithmName + '"&hc=1')
     .then(response => {
       parseString(response.data, (err, result)=>{
         if(!result.Error){
           totalFound = result.root.totalfound;
-          console.log("IEEE, Number of Articles Found: ", totalFound);
+          console.log("IEEE Number of Articles Found: ", totalFound);
           getNextBatch();
         }
       })
@@ -100,24 +161,29 @@ let fetchFromIEEE = function(AlgorithmName) {
   let getNextBatch = function(){
     rs = NoArtPerPage * pageNumber + 1;
     console.log("Loading Page:", pageNumber)
-    axios.get(urlApi + '?ab="' + AlgorithmName + '"&rs=' + rs + sortParams + "&hc=" + NoArtPerPage)
+    //console.log(urlApi + '?ab="' + AlgorithmName + '"&rs=' + rs + sortParams + "&hc=" + NoArtPerPage)
+    axios.get(urlApi + '?querytext="' + AlgorithmName + '"&rs=' + rs + sortParams + "&hc=" + NoArtPerPage)
       .then(response => {
         var papersR = [];
         parseString(response.data, (err, result)=>{
           if (err) console.log(err);
           result.root.document.forEach( a =>{
-            var data = {};
-            data.title = a.title.trim();
-            data.authors = a.authors.split(";");
-            data.year = a.py;
-            data.pubtitle = a.pubtitle;
-            data.link = a.mdurl;
-            data.algorithmname = AlgorithmName;
-            data.provider = "IEEE"
-            papersR.push(data);
+            try{
+              var data = {};
+              data.title = a.title.trim();
+              data.authors = a.authors.split(";");
+              data.year = a.py;
+              data.pubtitle = a.pubtitle;
+              data.doi = a.doi;
+              data.link = a.mdurl;
+              data.algorithmname = AlgorithmName;
+              papersR.push(data);
+            }catch(e){
+              console.log("Fail parse:", a);
+            }
           });
-          papers.insertMany(papersR, (err, r)=>{
-            console.log((NoArtPerPage * pageNumber + papersR.length) + " papers were succesfully added", AlgorithmName);
+          papers.insertMany(papersR, {ordered: false}, (err, r)=>{
+            console.log("IEEE: " + (NoArtPerPage * pageNumber + papersR.length) + " papers were succesfully added", AlgorithmName);
             pageNumber += 1
             if (NoArtPerPage * pageNumber + 1< totalFound){
               getNextBatch();
@@ -125,7 +191,7 @@ let fetchFromIEEE = function(AlgorithmName) {
               console.log("IEEE Fetch succesfull");
             }
           });
-        })
+        });
       }).catch(error => {
         console.log(error);
       });
@@ -133,62 +199,97 @@ let fetchFromIEEE = function(AlgorithmName) {
 }
 
 let fetchFromElsevier = function(AlgorithmName) {
-  let webRes = "";
   let NoArtPerPage = 200; //default
-  let pageNumber = 0;
-  let rs = NoArtPerPage * pageNumber;
+  let pageNumber = 1;
+  let rs = 0;
   let totalFound = 0;
   let apiKey = process.env.elsevierKey;
   let urlApi = "http://api.elsevier.com/content/search/scidir?apiKey="+apiKey+"&httpAccept=application/json&content=journals";
-  let sortParams = "&sort=-coverDate";
+  let sortParams = "&sort=+coverDate";
+  let DateObj = new Date;
+  let thisYear = parseInt(DateObj.getFullYear().toString());
+  let startYear = 0;
+  let nextUrl = "";
 
-
-  axios.get(urlApi + '&query=%22' + AlgorithmName + '%22&count=1')
+  axios.get(urlApi + '&query=%22' + AlgorithmName + '%22&count=1' + sortParams)
     .then(response => {
+      //console.log(response.data)
       totalFound = parseInt(response.data["search-results"]["opensearch:totalResults"]);
-      console.log("Elsevier, Number of Articles Found: ", totalFound);
+      var date =response.data["search-results"]["entry"][0]["prism:coverDisplayDate"];
+      startYear = parseInt(date.substring(date.length-4));
+      console.log("Elsevier " + totalFound + " Articles Found, staring at year " + startYear);
+      nextUrl = urlApi + '&query=%22' + AlgorithmName + '%22&count=' + NoArtPerPage + sortParams + "&date=" + startYear;
       if(totalFound) getNextBatch();
     }).catch(error => {
       console.log(error);
     });
 
   let getNextBatch = function(){
-    rs = NoArtPerPage * pageNumber;
-    console.log("Loading Page:", pageNumber)
-    axios.get(urlApi + '&query=%22' + AlgorithmName + '%22&count=' + NoArtPerPage+ '&start=' + rs + sortParams)
+    console.log("Loading Page:" + pageNumber + " of year:" + startYear)
+    //console.log(nextUrl);
+    axios.get(nextUrl)
       .then(response => {
         var papersR = [];
-        response.data["search-results"]["entry"].forEach( a =>{
-          var data = {};
-          data.title = a["dc:title"].trim();
-          var authors = [];
-          if(a.authors){
-            a.authors.author.forEach(au => {
-              authors.push(au["given-name"] + " " + au["surname"]);
-            })
+        if (response.data["search-results"]["opensearch:totalResults"] != "0"){
+          response.data["search-results"]["entry"].forEach( a =>{
+            try{
+              var data = {};
+              data.title = a["dc:title"].trim();
+              var authors = [];
+              if(a.authors){
+                a.authors.author.forEach(au => {
+                  authors.push(au["given-name"] + " " + au["surname"]);
+                })
+              }
+              data.authors = authors;
+              var date = a["prism:coverDisplayDate"];
+              data.year = date.substring(date.length-4);
+              data.pubtitle = a["prism:publicationName"];
+              data.doi = a["prism:doi"];
+              data.link = a.link[1]["@href"];
+              data.algorithmname = AlgorithmName;
+              papersR.push(data);
+            }catch(e){
+              console.log("Fail parse:", a);
+            }
+          });
+        }
+        rs += papersR.length;
+        var tempF = function(){
+          if(response.data["search-results"]["opensearch:totalResults"]=="0" || response.data["search-results"].link.length < 3){
+            startYear++
+            nextUrl = urlApi + '&query=%22' + AlgorithmName + '%22&count=' + NoArtPerPage + sortParams + "&date=" + startYear;
+            pageNumber = 1;
+          }else{
+            if(response.data["search-results"].link[2]["@ref"] !== "prev"){
+              console.log(response.data["search-results"].link[2]["@ref"]);
+              nextUrl = response.data["search-results"].link[2]["@href"];
+              pageNumber += 1;
+            }else{
+              startYear++
+              nextUrl = urlApi + '&query=%22' + AlgorithmName + '%22&count=' + NoArtPerPage + sortParams + "&date=" + startYear;
+              pageNumber = 1;
+            }
           }
-          data.authors = authors;
-          var date = a["prism:coverDisplayDate"];
-          data.year = date.substring(date.length-4);
-          data.pubtitle = a["prism:publicationName"];
-          data.link = a.link[1]["@href"];
-          data.algorithmname = AlgorithmName;
-          data.provider = "Elsevier"
-          papersR.push(data);
-        });
-        papers.insertMany(papersR, (err, r)=>{
-          console.log((NoArtPerPage * pageNumber + papersR.length) + " papers were succesfully added", AlgorithmName);
-          pageNumber += 1
-          if (NoArtPerPage * pageNumber < totalFound){
+          if (startYear <= thisYear){
             getNextBatch();
           }else{
             console.log("Elsevier Fetch succesfull");
           }
-        });
+        }
+        if(papersR.length != 0){
+          papers.insertMany(papersR, {ordered: false}, (err, r)=>{
+            console.log("Elsevier: " + rs + " papers were succesfully added", AlgorithmName);
+            tempF();
+          });
+        }else{
+          tempF();
+        }
       }).catch(error => {
         console.log(error);
       });
   }
+
 }
 
 
