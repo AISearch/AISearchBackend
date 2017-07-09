@@ -112,6 +112,7 @@ router.get('/papersPerYear', function (req, res) {
       doi: {$push: "$doi"}
     }
   });
+  agregateArray.push({ $sort: { "countReferences": 1 } })
   agregateArray.push({ $unwind : "$doi" });
   agregateArray.push({$group:
     {
@@ -127,10 +128,68 @@ router.get('/papersPerYear', function (req, res) {
     {
       year: "$id_year",
       algorithms: 1,
-      papers: { $size: "$doiArray" }
+      papers: { $size: "$doiArray" },
     }
   });
   agregateArray.push({ $sort: { "_id.year": 1 } });
+  papers.aggregate(agregateArray, (err, data)=>{
+    res.jsonp(data);
+  });
+});
+
+router.get('/papersPerAuthor/:author', function (req, res) {
+  var agregateArray = [];
+  agregateArray.push({ $match: { authors: { "$elemMatch" : {"$regex" : req.params.author }}}});
+  agregateArray.push({ $unwind : "$authors" });
+  agregateArray.push({ $group:
+    {
+      _id: {authors:"$authors"},
+      count: {$sum : 1},
+      papers: {$addToSet : "$title"},
+    }
+  });
+  agregateArray.push({ $match: { "_id.authors": {"$regex" : req.params.author }}});
+  agregateArray.push({ $sort: { "count": -1 } });
+  papers.aggregate(agregateArray, {allowDiskUse : true}, (err, data)=>{
+    res.jsonp(data);
+  });
+});
+router.get('/papersPerPub', function (req, res) {
+  var agregateArray = [];
+  agregateArray.push({ $group:
+    {
+      _id: {pubtitle:"$pubtitle", doi:"$doi"},
+    }
+  });
+  agregateArray.push({ $group:
+    {
+      _id: {pubtitle:"$_id.pubtitle"},
+      count: {$sum:1},
+    }
+  });
+  agregateArray.push({ $sort: { "count": -1 } });
+  papers.aggregate(agregateArray, (err, data)=>{
+    res.jsonp(data);
+  });
+});
+
+router.get('/papersPerPub/:pubtitle', function (req, res) {
+  var agregateArray = [];
+  agregateArray.push({ $match: { "pubtitle": {"$regex" : req.params.pubtitle }}});
+  agregateArray.push({ $group:
+    {
+      _id: {pubtitle:"$pubtitle", doi:"$doi"},
+      title: {$first:"$title"},
+    }
+  });
+  agregateArray.push({ $group:
+    {
+      _id: {pubtitle:"$_id.pubtitle"},
+      count: {$sum:1},
+      titles: {$push:"$title"}
+    }
+  });
+  agregateArray.push({ $sort: { "count": -1 } });
   papers.aggregate(agregateArray, (err, data)=>{
     res.jsonp(data);
   });
