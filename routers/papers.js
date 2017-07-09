@@ -114,7 +114,7 @@ router.get('/countWords/:AlgorithmName', function (req, res) {
               arr.push([ prop, obj[prop] ]);
           }
       }
-      arr.sort(function(a, b) { return b.value - a.value; });
+      arr.sort(function(a, b) { return b[1] - a[1]; });
       //arr.sort(function(a, b) { a.value.toLowerCase().localeCompare(b.value.toLowerCase()); }); //use this to sort as strings
       return arr; // returns array
     }
