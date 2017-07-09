@@ -82,6 +82,50 @@ router.get('/titles/:AlgorithmName', function (req, res) {
   });
 });
 
+router.get('/ownPapers/:AlgorithmName', function (req, res) {
+  var query = {"algorithmname":req.params.AlgorithmName, "title":{"$regex":req.params.AlgorithmName, "$options": "i"}};
+  var project = { title: 1, AlgorithmName:1 };
+  var sort = req.query.sort ? JSON.parse(req.query.sort) : {};
+  var limit = req.query.limit ? parseInt(req.query.limit) : 10;
+  var skip = req.query.skip ? parseInt(req.query.skip) : 0;
+  papers.find(query, project).sort(sort).skip(skip).limit(limit).toArray((err, docs)=>{
+    res.jsonp(docs);
+  });
+});
+
+router.get('/countWords/:AlgorithmName', function (req, res) {
+  var query = {"algorithmname":req.params.AlgorithmName, "title":{"$regex":req.params.AlgorithmName, "$options": "i"}};
+  var project = { title: 1, AlgorithmName:1 };
+  var countWords = {}
+  papers.find(query, project).forEach((doc)=>{
+    doc.title.toLowerCase().match(/([a-z])\w+/g).reduce((x,r)=>{
+      if(x[r]){
+        x[r]++;
+      }else{
+        x[r] = 1;
+      }
+      return x;
+    }, countWords);
+  },function(err){
+    function sortObject(obj) {
+      var arr = [];
+      for (var prop in obj) {
+          if (obj.hasOwnProperty(prop)) {
+              arr.push({
+                  'key': prop,
+                  'value': obj[prop]
+              });
+          }
+      }
+      arr.sort(function(a, b) { return b.value - a.value; });
+      //arr.sort(function(a, b) { a.value.toLowerCase().localeCompare(b.value.toLowerCase()); }); //use this to sort as strings
+      return arr; // returns array
+    }
+    var arr = sortObject(countWords);
+    res.jsonp(arr);
+  });
+});
+
 router.get('/count', function (req, res) {
   var agregateArray = [];
   agregateArray.push({$group:
@@ -90,6 +134,7 @@ router.get('/count', function (req, res) {
       count: { $sum: 1 }
     }
   });
+  agregateArray.push({ $sort: { year: 1 } });
   agregateArray.push({$group:
     {
       _id: {algorithmname:"$_id.algorithmname"},
