@@ -112,7 +112,6 @@ router.get('/papersPerYear', function (req, res) {
       doi: {$push: "$doi"}
     }
   });
-  agregateArray.push({ $sort: { "countReferences": 1 } })
   agregateArray.push({ $unwind : "$doi" });
   agregateArray.push({$group:
     {
@@ -129,6 +128,15 @@ router.get('/papersPerYear', function (req, res) {
       year: "$id_year",
       algorithms: 1,
       papers: { $size: "$doiArray" },
+    }
+  });
+  agregateArray.push({ $unwind : "$algorithms" });
+  agregateArray.push({ $sort: { "algorithms.countReferences": -1 } })
+  agregateArray.push({$group:
+    {
+      _id: {year:"$_id.year"},
+      algorithms: { $push : "$algorithms"},
+      papers: {$first: "$papers"}
     }
   });
   agregateArray.push({ $sort: { "_id.year": 1 } });
