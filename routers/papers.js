@@ -111,10 +111,7 @@ router.get('/countWords/:AlgorithmName', function (req, res) {
       var arr = [];
       for (var prop in obj) {
           if (obj.hasOwnProperty(prop)) {
-              arr.push({
-                  'key': prop,
-                  'value': obj[prop]
-              });
+              arr.push([ prop, obj[prop] ]);
           }
       }
       arr.sort(function(a, b) { return b.value - a.value; });
