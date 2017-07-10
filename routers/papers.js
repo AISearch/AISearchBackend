@@ -97,8 +97,10 @@ router.get('/countWords/:AlgorithmName', function (req, res) {
   var query = {"algorithmname":req.params.AlgorithmName, "title":{"$regex":req.params.AlgorithmName, "$options": "i"}};
   var project = { title: 1, AlgorithmName:1 };
   var countWords = {}
+  var commondWords = "algorithm algorithms of for using based and on in the with to by an a system problem application method problems research solving it its test non approach"
   papers.find(query, project).forEach((doc)=>{
     doc.title.toLowerCase().match(/([a-z])\w+/g).reduce((x,r)=>{
+      if(commondWords.includes(r)) return x;
       if(x[r]){
         x[r]++;
       }else{
@@ -119,7 +121,22 @@ router.get('/countWords/:AlgorithmName', function (req, res) {
       return arr; // returns array
     }
     var arr = sortObject(countWords);
-    res.jsonp(arr);
+    if(!req.query.limit){
+      arr = arr.slice(0,100);
+    }else {
+      arr = arr.slice(0,req.query.limit);
+    }
+    if(!req.query.asText){
+      res.jsonp(arr);
+    }else{
+      r = "";
+      max = arr[0][1];
+      min = arr[arr.length-1][1];
+      arr.forEach(p => {
+        for(var i=0; i<Math.floor(p[1]/max * 10); i++) r += p[0] + " ";
+      })
+      res.send(r);
+    }
   });
 });
 
