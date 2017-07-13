@@ -24,9 +24,18 @@ router.get('/', function (req, res) {
   var sort = req.query.sort ? JSON.parse(req.query.sort) : {};
   var limit = req.query.limit ? parseInt(req.query.limit) : 10;
   var skip = req.query.skip ? parseInt(req.query.skip) : 0;
-  papers.find(query).sort(sort).skip(skip).limit(limit).toArray((err, docs)=>{
-    res.jsonp(docs);
-  });
+  var tepmF = papers.find(query).sort(sort);
+  tepmF.count((err, count)=>{
+    var returnData = {
+      count:count,
+      page: Math.floor(skip/limit),
+      totalPages: Math.ceil(count/limit),
+    }
+    tepmF.skip(skip).limit(limit).toArray((err, docs)=>{
+      returnData.docs = docs;
+      res.jsonp(returnData);
+    });
+  })
 })
 
 // define the home page route
