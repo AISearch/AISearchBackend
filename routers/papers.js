@@ -109,7 +109,7 @@ router.get('/countWords/:AlgorithmName', function (req, res) {
   var countWords = {}
   var commondWords = "algorithm algorithms of for using based and on in the with to by an a system problem application method problems research solving it its test non approach"
   papers.find(query, project).forEach((doc)=>{
-    doc.title.toLowerCase().match(/([a-zA-Z'-])\w+/g).reduce((x,r)=>{
+    doc.title.toLowerCase().match(/([a-zA-Z'-]+)\w+/g).reduce((x,r)=>{
       if(commondWords.includes(r)) return x;
       if(x[r]){
         x[r]++;
