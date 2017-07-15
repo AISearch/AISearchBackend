@@ -63,33 +63,6 @@ router.get('/name/:AlgorithmName', function (req, res) {
   }
 });
 
-router.get('/fetchThemAll', function(req, res){
-  list.find({},{title:1}).toArray((err, docs)=>{
-    docs.forEach(d => {
-      fetchFromIEEE(d.title);
-      fetchFromElsevier(d.title);
-    });
-  });
-});
-router.get('/fetchIEEE/:AlgorithmName', function (req, res) {
-  if ( req.params.AlgorithmName){
-    list.findOne({title:req.params.AlgorithmName}, function(err, data){
-      if(data){
-        fetchFromIEEE(req.params.AlgorithmName);
-      }
-    });
-  }
-});
-router.get('/fetchElsevier/:AlgorithmName', function (req, res) {
-  if ( req.params.AlgorithmName){
-    list.findOne({title:req.params.AlgorithmName}, function(err, data){
-      if(data){
-        fetchFromElsevier(req.params.AlgorithmName);
-      }
-    });
-  }
-});
-
 router.get('/titles/:AlgorithmName', function (req, res) {
   var query = {algorithmname:req.params.AlgorithmName};
   var project = { title: 1, AlgorithmName:1 };
@@ -116,7 +89,7 @@ router.get('/countWords/:AlgorithmName', function (req, res) {
   var query = {"algorithmname":req.params.AlgorithmName, "title":{"$regex":req.params.AlgorithmName, "$options": "i"}};
   var project = { title: 1, AlgorithmName:1 };
   var countWords = {}
-  var commondWords = "algorithm algorithms of for using based and on in the with to by an a system problem application method problems research solving it its test non approach"
+  var commondWords = "algorithm algorithms of for using based and on in the with to by an a system problem application method problems research solving it its test non approach " + req.params.AlgorithmName
   papers.find(query, project).forEach((doc)=>{
     doc.title.toLowerCase().match(/([a-zA-Z'-]+)\w+/g).reduce((x,r)=>{
       if(commondWords.includes(r)) return x;
@@ -259,6 +232,23 @@ router.get('/papersPerPub', function (req, res) {
   });
 });
 
+router.get('/algorithmAuthors/:algName', function(req, res){
+  var agregateArray = [];
+  agregateArray.push({ $match: { "algorithmname": req.params.algName }});
+  agregateArray.push({ $unwind : "$authors" });
+  agregateArray.push({ $group:
+    {
+      _id: { authors:"$authors" },
+      count: {$sum: 1 },
+    }
+  });
+  agregateArray.push({ $sort: { "count": -1 } });
+  agregateArray.push({ $limit: 100 });
+  papers.aggregate(agregateArray, (err, data)=>{
+    res.jsonp(data);
+  });
+});
+
 router.get('/papersPerPub/:pubtitle', function (req, res) {
   var agregateArray = [];
   agregateArray.push({ $match: { "pubtitle": {"$regex" : req.params.pubtitle }}});
@@ -279,6 +269,34 @@ router.get('/papersPerPub/:pubtitle', function (req, res) {
   papers.aggregate(agregateArray, (err, data)=>{
     res.jsonp(data);
   });
+});
+
+
+router.get('/fetchThemAll', function(req, res){
+  list.find({},{title:1}).toArray((err, docs)=>{
+    docs.forEach(d => {
+      fetchFromIEEE(d.title);
+      fetchFromElsevier(d.title);
+    });
+  });
+});
+router.get('/fetchIEEE/:AlgorithmName', function (req, res) {
+  if ( req.params.AlgorithmName){
+    list.findOne({title:req.params.AlgorithmName}, function(err, data){
+      if(data){
+        fetchFromIEEE(req.params.AlgorithmName);
+      }
+    });
+  }
+});
+router.get('/fetchElsevier/:AlgorithmName', function (req, res) {
+  if ( req.params.AlgorithmName){
+    list.findOne({title:req.params.AlgorithmName}, function(err, data){
+      if(data){
+        fetchFromElsevier(req.params.AlgorithmName);
+      }
+    });
+  }
 });
 
 let fetchFromIEEE = function(AlgorithmName) {
@@ -317,6 +335,9 @@ let fetchFromIEEE = function(AlgorithmName) {
               var data = {};
               data.title = a.title.trim();
               data.authors = a.authors.split(";");
+              data.authors.forEach((au,ind)=>{
+                data.authors[ind] = data.authors[ind].trim();
+              });
               data.year = a.py;
               data.pubtitle = a.pubtitle;
               data.doi = a.doi;
