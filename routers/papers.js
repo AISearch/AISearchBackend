@@ -89,7 +89,7 @@ router.get('/countWords/:AlgorithmName', function (req, res) {
   var query = {"algorithmname":req.params.AlgorithmName, "title":{"$regex":req.params.AlgorithmName, "$options": "i"}};
   var project = { title: 1, AlgorithmName:1 };
   var countWords = {}
-  var commondWords = "algorithm algorithms of for using based and on in the with to by an a system problem application method problems research solving it its test non approach " + req.params.AlgorithmName
+  var commondWords = "algorithm algorithms of for using based and on in the with to by an a system problem application method problems research solving it its test non approach " + req.params.AlgorithmName.toLowerCase()
   papers.find(query, project).forEach((doc)=>{
     doc.title.toLowerCase().match(/([a-zA-Z'-]+)\w+/g).reduce((x,r)=>{
       if(commondWords.includes(r)) return x;
