@@ -273,33 +273,36 @@ router.get('/papersPerPub/:pubtitle', function (req, res) {
 
 
 router.get('/fetchThemAll', function(req, res){
+  var yearStop = req.query.year || 0;
   list.find({},{title:1}).toArray((err, docs)=>{
     docs.forEach(d => {
-      fetchFromIEEE(d.title);
-      fetchFromElsevier(d.title);
+      fetchFromIEEE(d.title, yearStop);
+      fetchFromElsevier(d.title, yearStop);
     });
   });
 });
 router.get('/fetchIEEE/:AlgorithmName', function (req, res) {
+  var yearStop = req.query.year || 0;
   if ( req.params.AlgorithmName){
     list.findOne({title:req.params.AlgorithmName}, function(err, data){
       if(data){
-        fetchFromIEEE(req.params.AlgorithmName);
+        fetchFromIEEE(req.params.AlgorithmName, yearStop);
       }
     });
   }
 });
 router.get('/fetchElsevier/:AlgorithmName', function (req, res) {
+  var yearStop = req.query.year || 0;
   if ( req.params.AlgorithmName){
     list.findOne({title:req.params.AlgorithmName}, function(err, data){
       if(data){
-        fetchFromElsevier(req.params.AlgorithmName);
+        fetchFromElsevier(req.params.AlgorithmName, yearStop);
       }
     });
   }
 });
 
-let fetchFromIEEE = function(AlgorithmName) {
+let fetchFromIEEE = function(AlgorithmName, yearStop = 0) {
   let NoArtPerPage = 1000; //default
   let pageNumber = 0;
   let rs = NoArtPerPage * pageNumber;
@@ -345,14 +348,14 @@ let fetchFromIEEE = function(AlgorithmName) {
               data.algorithmname = AlgorithmName;
               papersR.push(data);
             }catch(e){
-              console.log("Fail parse:", a);
+              console.log("Fail parse:", a.title.trim());
             }
           });
           papers.insertMany(papersR, {ordered: false}, (err, r)=>{
             console.log("IEEE: " + (NoArtPerPage * pageNumber + papersR.length) + " papers were succesfully added", AlgorithmName);
             pageNumber += 1
-            if (NoArtPerPage * pageNumber + 1< totalFound){
-              getNextBatch();
+            if (NoArtPerPage * pageNumber + 1 < totalFound){
+              if(papersR[papersR.length-1].year > yearStop - 1) getNextBatch();
             }else{
               console.log("IEEE Fetch succesfull");
             }
@@ -364,7 +367,7 @@ let fetchFromIEEE = function(AlgorithmName) {
   }
 }
 
-let fetchFromElsevier = function(AlgorithmName) {
+let fetchFromElsevier = function(AlgorithmName, yearStop = 0) {
   let NoArtPerPage = 200; //default
   let pageNumber = 1;
   let rs = 0;
@@ -373,16 +376,16 @@ let fetchFromElsevier = function(AlgorithmName) {
   let urlApi = "http://api.elsevier.com/content/search/scidir?apiKey="+apiKey+"&httpAccept=application/json&content=journals";
   let sortParams = "&sort=+coverDate";
   let DateObj = new Date;
-  let thisYear = parseInt(DateObj.getFullYear().toString());
-  let startYear = 0;
+  let thisYear = parseInt(DateObj.getFullYear().toString()) + 1;
+  let startYear = yearStop;
   let nextUrl = "";
 
   axios.get(urlApi + '&query=%22' + AlgorithmName + '%22&count=1' + sortParams)
     .then(response => {
       //console.log(response.data)
       totalFound = parseInt(response.data["search-results"]["opensearch:totalResults"]);
-      var date =response.data["search-results"]["entry"][0]["prism:coverDisplayDate"];
-      startYear = parseInt(date.substring(date.length-4));
+      var date = response.data["search-results"]["entry"][0]["prism:coverDisplayDate"];
+      startYear = startYear || parseInt(date.substring(date.length-4));
       console.log("Elsevier " + totalFound + " Articles Found, staring at year " + startYear);
       nextUrl = urlApi + '&query=%22' + AlgorithmName + '%22&count=' + NoArtPerPage + sortParams + "&date=" + startYear;
       if(totalFound) getNextBatch();
