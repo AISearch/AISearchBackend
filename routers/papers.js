@@ -149,7 +149,7 @@ router.get('/count', function (req, res) {
     }
   });
   agregateArray.push({ $sort: { count: -1 } });
-  papers.aggregate(agregateArray).toArray().then((err, data)=>{
+  papers.aggregate(agregateArray).toArray().then((data)=>{
     res.jsonp(data);
   });
 });
@@ -192,11 +192,6 @@ router.get('/papersPerYear', function (req, res) {
   });
   agregateArray.push({ $sort: { "_id.year": 1 } });
 
-  /*papers.aggregate(agregateArray, { cursor: {} }, (err, data)=>{
-    if(err) console.error(err);
-    res.jsonp(data);
-  });*/
-
   papers.aggregate(agregateArray).toArray().then((data)=>{
     res.jsonp(data);
   });
@@ -215,7 +210,7 @@ router.get('/papersPerAuthor/:author', function (req, res) {
   });
   agregateArray.push({ $match: { "_id.authors": {"$regex" : req.params.author }}});
   agregateArray.push({ $sort: { "count": -1 } });
-  papers.aggregate(agregateArray, {allowDiskUse : true}).toArray().then((err, data)=>{
+  papers.aggregate(agregateArray, {allowDiskUse : true}).toArray().then((data)=>{
     res.jsonp(data);
   });
 });
@@ -233,7 +228,7 @@ router.get('/papersPerPub', function (req, res) {
     }
   });
   agregateArray.push({ $sort: { "count": -1 } });
-  papers.aggregate(agregateArray).toArray().then((err, data)=>{
+  papers.aggregate(agregateArray).toArray().then((data)=>{
     res.jsonp(data);
   });
 });
@@ -250,7 +245,7 @@ router.get('/algorithmAuthors/:algName', function(req, res){
   });
   agregateArray.push({ $sort: { "count": -1 } });
   agregateArray.push({ $limit: 100 });
-  papers.aggregate(agregateArray).toArray().then((err, data)=>{
+  papers.aggregate(agregateArray).toArray().then((data)=>{
     res.jsonp(data);
   });
 });
@@ -272,7 +267,7 @@ router.get('/papersPerPub/:pubtitle', function (req, res) {
     }
   });
   agregateArray.push({ $sort: { "count": -1 } });
-  papers.aggregate(agregateArray).toArray().then((err, data)=>{
+  papers.aggregate(agregateArray).toArray().then((data)=>{
     res.jsonp(data);
   });
 });

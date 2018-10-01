@@ -40,7 +40,7 @@ router.get('/countYear', (req,res)=>{
     }
   });
   agregateArray.push({ $sort: { "_id.year": 1 } });
-  list.aggregate(agregateArray).toArray().then((err, data)=>{
+  list.aggregate(agregateArray).toArray().then((data)=>{
     res.jsonp(data);
   });
 })
