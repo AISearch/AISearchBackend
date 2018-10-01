@@ -58,7 +58,7 @@ router.get('/avg', (req, res)=>{
 
   agregateArray.push({ $sort: { fitnessAvg: 1 } });
 
-  records.aggregate(agregateArray, (err, data)=>{
+  records.aggregate(agregateArray).toArray().then((err, data)=>{
     res.jsonp(data);
   });
 });
@@ -85,7 +85,7 @@ router.get('/tournament', (req, res)=>{
     }
   });
   agregateArray.push({ $sort: { "_id.benchmark": 1,  "_id.dimensions": 1 } });
-  records.aggregate(agregateArray, (err, data)=>{
+  records.aggregate(agregateArray).toArray().then((err, data)=>{
     res.jsonp(data);
   });
 });
