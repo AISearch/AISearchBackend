@@ -1,6 +1,6 @@
 {
   "name": "metaheuristicserver",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "This is going to be the rest server for the metaheuristic database",
   "main": "index.js",
   "engines": {
