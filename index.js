@@ -5,11 +5,13 @@ var express = require('express'),
     app = express(),
     bodyParser = require('body-parser'),
     assert = require('assert'),
-    mongoConfig = require("./mongoConfig");
+    mongoConfig = require("./mongoConfig"),
+    fs = require('fs'),
+    https = require('https');
 
 
 // app.set('view engine', 'pug');
-app.set('port', (process.env.PORT || 5000));
+app.set('port', 8080);
 
 // parse application/x-www-form-urlencoded
 app.use(bodyParser.urlencoded({ extended: false }))
@@ -45,9 +47,17 @@ mongoConfig.connectToServer( ( err )=>{
     res.sendStatus(404);
   });
 
-  var server = app.listen(app.get('port'), ()=>{
+  /*var server = app.listen(app.get('port'), ()=>{
     var port = server.address().port;
     console.log('Express server is lisening at port ', port);
-  });
+  });*/
+  var server = https.createServer({
+    key: fs.readFileSync('server.key'),
+    cert: fs.readFileSync('server.cert')
+  }, app)
+  .listen(app.get('port'), function () {
+    var port = server.address().port;
+    console.log('Express server is lisening at port ', port);
+  })
 
 });
