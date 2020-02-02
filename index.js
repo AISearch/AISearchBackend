@@ -6,11 +6,14 @@ var express = require('express'),
     bodyParser = require('body-parser'),
     assert = require('assert'),
     mongoConfig = require("./mongoConfig"),
-    fs = require('fs'),
-    https = require('https');
+    fs = require('fs');
 
+var http = require('http');
+var https = require('https');
+var privateKey  = fs.readFileSync('server.key', 'utf8'); //HTTPS certificate
+var certificate = fs.readFileSync('server.cert', 'utf8');
+var credentials = {key: privateKey, cert: certificate};
 
-// app.set('view engine', 'pug');
 app.set('port', 8080);
 
 // parse application/x-www-form-urlencoded
@@ -18,7 +21,7 @@ app.use(bodyParser.urlencoded({ extended: false }))
 // parse application/json
 app.use(bodyParser.json())
 
-// allowing cros
+// allowing cross-origin, because AISearch is host on a github-page and the server in a private server
 app.use(function(req, res, next) {
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
@@ -27,8 +30,8 @@ app.use(function(req, res, next) {
 
 mongoConfig.connectToServer( ( err )=>{
   assert.equal(null, err);
-  //console.log(list);
 
+  //root directory
   app.get('/', (req, res)=>{
     res.send("Welcome to the metaheuristic api.")
   });
@@ -47,17 +50,10 @@ mongoConfig.connectToServer( ( err )=>{
     res.sendStatus(404);
   });
 
-  /*var server = app.listen(app.get('port'), ()=>{
-    var port = server.address().port;
-    console.log('Express server is lisening at port ', port);
-  });*/
-  var server = https.createServer({
-    key: fs.readFileSync('server.key'),
-    cert: fs.readFileSync('server.cert')
-  }, app)
-  .listen(app.get('port'), function () {
-    var port = server.address().port;
-    console.log('Express server is lisening at port ', port);
-  })
+  //Only executed if MongoDB is connected
+  var httpServer = http.createServer(app);
+  var httpsServer = https.createServer(credentials, app);
+  httpServer.listen(8080);
+  httpsServer.listen(8443);
 
 });

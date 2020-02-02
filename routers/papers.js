@@ -155,6 +155,14 @@ router.get('/count', function (req, res) {
 });
 
 router.get('/papersPerYear', function (req, res) {
+  var papersPerYear = db.collection('papersPerYear');
+  papersPerYear.find().toArray((err, docs)=>{
+    res.jsonp(docs);
+  });
+});
+
+//this is too computational heavy, it is best to cache the answer.
+router.get('/updatePapersPerYear', function (req, res) {
   var agregateArray = [];
   agregateArray.push({$group:
     {
@@ -191,6 +199,7 @@ router.get('/papersPerYear', function (req, res) {
     }
   });
   agregateArray.push({ $sort: { "_id.year": 1 } });
+  agregateArray.push({ $out: "papersPerYear" });
 
   papers.aggregate(agregateArray).toArray().then((data)=>{
     res.jsonp(data);
