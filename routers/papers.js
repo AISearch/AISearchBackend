@@ -133,6 +133,13 @@ router.get('/countWords/:AlgorithmName', function (req, res) {
 });
 
 router.get('/count', function (req, res) {
+  var countCache = db.collection('countCache');
+  countCache.find().toArray((err, docs)=>{
+    res.jsonp(docs);
+  });
+});
+
+router.get('/updateCount', function (req, res) {
   var agregateArray = [];
   agregateArray.push({$group:
     {
@@ -149,6 +156,7 @@ router.get('/count', function (req, res) {
     }
   });
   agregateArray.push({ $sort: { count: -1 } });
+  agregateArray.push({ $out: "countCache" });
   papers.aggregate(agregateArray).toArray().then((data)=>{
     res.jsonp(data);
   });
